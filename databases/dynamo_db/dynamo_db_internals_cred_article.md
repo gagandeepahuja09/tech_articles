@@ -105,3 +105,47 @@ Membership
 
 ***********************************************************************************
 
+Architecture
+
+Diagram: https://docs.google.com/document/d/17uiIuwqJtc6HiBPgr3ZLHFU5NyEqcnV_Bth1WSmA5PE/edit
+
+Example:
+Partition Key: transaction_id
+LSI Partition Key: transaction_id
+LSI Sort Key: timestamp
+GSI Partition Key: user_id
+GSI Sort Key: timestamp
+
+* GetItem & PutItem
+
+*** PutItem ***
+
+Request Router
+* The write request first hits the request router module.
+* The request router module resides in a separate availability zone from the storage node.
+* Every availability zone hosts multiple request router modules.
+* It performs Authentication & authorization and then computes the MD5 hash out of the partition key to identify the partition to which the document belongs.
+
+Partition Metadata System
+* The request router enquires partition metadata system to identify the replicas hosting the partition and also the replica hosting the leader partition.
+
+B-tree & Replication log
+* Once the write request is persisted to the leader partition, it's first persisted locally to B-tree and then appended on replication log. Both these operations happen atomically.
+
+Leader to Sync Follower to LSI(if present)
+* Similar B-tree & replication log operation.
+* The operation is performed for both the LSI and the sync follower of the LSI.
+* After persiting in leader + sync follower + LSI + sync follower of LSI the request is considered durable and a success report is sent to the client.
+
+Log Propagator
+* Log propagator reads the replication log and propagates the changes across other replicas(async followers, LSI, GSI in the same order).
+* Since some of these changes are applied async, there are 2 modes of document access: Eventually consistent and Strongly consistent.
+
+
+*** GetItem ***
+
+* The read request for both the main table and the index tables works in a similar fashion.
+* Includes following parameters: Table name(Main/LSI/GSI), Partition Key, optionally a sort key and/or consistency level.
+* Request first hits the request router => Authentication & authorization => MD5 hash of partition key to find the partition => Partition metadata system to identify all the replicas holding the partition.
+* Eventually consistent => Forwarded to any of the 3 partitions.
+* Strongly consistent => Forwarded to leader or sync follower.
