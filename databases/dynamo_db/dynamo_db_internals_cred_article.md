@@ -149,3 +149,68 @@ Log Propagator
 * Request first hits the request router => Authentication & authorization => MD5 hash of partition key to find the partition => Partition metadata system to identify all the replicas holding the partition.
 * Eventually consistent => Forwarded to any of the 3 partitions.
 * Strongly consistent => Forwarded to leader or sync follower.
+
+***********************************************************************************
+
+Auto Admin(DBA of DynamoDB): Core responsibilities
+    1. Auto Scaling
+    2. Provisioning
+    3. Failover
+    4. Replacement of replicas
+
+***********************************************************************************
+
+Table Provisioning
+* DynamoDB operates on pay for throughput rather than pay for storage.
+* DynamoDB mandates specifying RCU & WCU while creating the table.
+* If these capacities are breached, further requests will be throttled.
+* The provisioning of the RCUs, WCUs for partitions is done in equal distribution wrt the table. Eg. RCU for table = X and 3 partition => RCU for each partition => X / 3.
+* This means that requests will still get throttled, even if they receive unequal distribution and other partitions are under-utilized.
+* Hence it's very important to choose a partition key such that it evenly distributes the traffic across the partitions and has a high cardinality. Good PK: UUID, Bad PK: status fields like enums.
+
+***********************************************************************************
+
+Rate Limiting
+* DynamoDB uses leaky bucket algorithm for rate limiting.
+* It creates a leaky bucket per partition.
+* Buckets are refilled every second with appropriate tokens matching RCU/WCU per partiton.
+* For every read/write request tokens are removed & if the bucket is empty within a second, it throws a ProvisionedThroughputExceeded exception.
+* DynamoDB has built multiple solutions to let applications continue running without throughput exceeded exception.
+
+***********************************************************************************
+
+Burst Capacity
+* Built to support spiky patterns at certain intervals.
+* If a partition's provisioned capacity is unused for read / write requests, DynamoDB reserves a portion of that unused capacity for 5 minutes and are utilized during bursts when the threshold is exceeded.
+
+***********************************************************************************
+
+Adaptive Capacity
+* This was introduced to let applications with imbalanced load run indefinitely.
+* DynamoDB increases the throughput of hotspot partitions by a factor called adaptive rate using a feedback mechanism dictated by the PID controller.
+
+Hotspot Documents: If few documents are continuously hit for read and write requests in a given partition, adaptive capacity balances these partitions such that they don't reside in the same partition thereby preventing throttling.
+
+***********************************************************************************
+
+Auto Scaling(All this would have to be done manually in MySQL databases)
+
+* If the RCU per partition threshold (3000 / No_of_partitions) or WCU per partition threshold (3000 / No_of_partitions) or the data growth of the partition exceeds 10GB, auto admin initiates new partition creation and migrates half of the data from old partition to the new partition.
+* Consistent hashing => minimal data movement and consumption of bandwidth.
+* Partition metadata system is updated with the latest information on partition and replica mapping. 
+
+***********************************************************************************
+
+Backups And Restore
+
+Backup
+* Replication log in every partition is batched together and uploaded to S3 at regular intervals.
+* B-tree in each partition is scanned and a snapshot is taken periodically into S3 at slightly higher intervals.
+* Once the snapshot is taken, R Log & previous snapshot can be truncated from S3.
+
+Restore
+* The restore operation will scan every partition backup on S3 and look for the latest partition before the given time frame and use replication log to replay remaining events post the snapshot. ==> On-demand backup
+
+Point in Time Recovery
+* Provides data backup every second so that we can recover to any given second in the last 35 days.
+* Snapshot, R Log can't be deleted for 35 days. ==> extra charge.
