@@ -42,3 +42,19 @@ Redlock Algorithm
 * Also, there is a validity time / auto release time period within which the lock should be acquired.
 * The client tries to acquire lock in all the instances sequentially.
 * Timeout to acquire the lock(5-50 ms) << auto release time(10s) so that no time is wasted. If an instance is not available, we should try to talk with the next instance ASAP. 
+
+*****************************************************************************
+
+Retry On Failure
+
+* When a client is unable to acquire a lock, it should try after a random delay(jitter) in order to try to avoid split brain condition where nobody wins.
+* Faster the client tries to acquire the lock, smaller the window for a split brain condition(and the need for a retry).
+* Ideally the client should try to send the SET commands to the N instances at the same time using multiplexing.
+* The client that failed to acquire the majority of locks, should try to release the locks ASAP.
+
+*****************************************************************************
+
+Performance, Crash Recovery and fsync
+
+* Multiplexing is the best strategy to improve performance.
+* Putting the socket in non-blocking mode, send all the commands and then read all the commands later.
