@@ -24,3 +24,4 @@ Example: Ride sharing app.
     * Once the replication is done, promote the new machine to primary and take the older machine offline. 
 
 **Pattern3: Command Query Responsibility Segregation**
+* In most of the cases, any company needs transactional capabilities on write but not on read operations.
