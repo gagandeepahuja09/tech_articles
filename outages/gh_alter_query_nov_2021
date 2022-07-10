@@ -1,0 +1,45 @@
+* https://github.blog/2021-12-01-github-availability-report-november-2021/
+* Schema migrations are a common task at Github and often take weeks to complete.
+
+**Insight 1: Why schema migrations take so long?**
+* When we are adding a new column, the entire row needs to be rewritten.
+* We can use either of the algorithm: COPY or INPLACE.
+* Steps:
+    * Row is read.
+    * Column is added.
+    * Row is re-written.
+    * Pointers are re-arranged in the B+ tree.
+* In case of COPY the table is locked, while in case of INPLACE the row is locked.
+* In most cases, INPLACE is preferred over COPY.
+
+**Insight 2: Why and when would we require a table rename in case of migration**
+* For large tables, we cannot run direct ALTER migrations due to table-level or row-level lock.
+* How migration happens:
+    1. New ghost table is created with no data.
+    2. Schema is altered.
+    3. Data is copied.
+    4. Table is renamed.
+* With this, without requiring a lock on rows or without affecting the throughput of the system, we were able to apply ALTER.
+
+**Insight 3: Deadlock on replicas**
+* During the final step of migration(rename), a significant portion of MySQL replicas entered a semaphore deadlock.
+* It sounds very wierd the deadlock occurred on read replicas because the exclusive locks are applied generally when we are doing writes.
+* Bigger question: Read replica could be waiting on the master but who is waiting on the read replica?
+* Who is writing on the replica? The replication job.
+* Replication job reads the BINLOG file from the master. These queries from the BINLOG file are sent to the read replica.
+* If the write required taking a lock, that same lock would be required to be taken on the replica as well (most probably is exclusive lock).
+
+**Insight 4: Seperate Fleet of Replicas for Internal traffic**
+* Fleet 1: Replicas for internal traffic.
+* Fleet 2: Replicas for internal usecases:
+    1. Analytics
+    2. Backups
+    3. Other internal services
+
+**Insight 5: Database Failures Cascade**
+* The read replicas that hit the deadlock entered a *crash-recovery* state.
+    * Whenever the DB process crashes, it would try to reboot and recover itself but because of heavy load, it would again crash.
+* Cascading failure: Due to few of the read replicas going down, the remaining replicas were receiving more than expected traffic and they too crashed.
+    * There was no overprosining done. Assume 3 replicas, each getting 33% of the requests. They were provisioned with 32GB RAM for that.(1k requests/s)
+    * If 1 of them goes down, they started getting 50% of the requests.(1.5k requests/s).
+    * *All of the databases are prone to the cascading failures.*
