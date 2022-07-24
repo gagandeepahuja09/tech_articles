@@ -43,3 +43,26 @@
     * There was no overprosining done. Assume 3 replicas, each getting 33% of the requests. They were provisioned with 32GB RAM for that.(1k requests/s)
     * If 1 of them goes down, they started getting 50% of the requests.(1.5k requests/s).
     * *All of the databases are prone to the cascading failures.*
+
+**Mitigation**
+* The natural tendency would be to add more read replicas.
+* Github team promoted all available internal replicas that were in a healthy state into production path.
+    * Smart move as creating a replica takes a long time.
+* But it didn't work because of heavy load and the newly added replicas also entered the crash recovery state.
+
+**Data-integrity over availability**
+* Based on the crash-recovery loop, they prioritized data integrity over availability.
+* The removed production traffic from the broken replicas until they were able to successfully process the table rename.
+* Crash-recovery loop has anyway affected the availability. We want to prioritize the data integrity. No matter how many times the crash happens, the data should not be corrupted.
+
+* *Data on the replica could corrupt becuase the DB could crash while replicating the data from the master.*
+* We don't want the replicas to corrupt because that would be a bigger issue and require much more effort than to just get the site up and running.
+
+**How to handle this**
+1. Let the replica crash.
+2. Let the crashed replica not handle any traffic. Remove the replica out of the production fleet.
+3. Let the replica complete its schema migration.
+4. Once completely recovered, add it to handle production.
+
+* They were crashing because of the deadlock. The I/O wait-time increase significantly during that time.
+* In such cases, a circuit breaker would have helped a lot by not letting traffic enter the read-replica.
