@@ -33,3 +33,19 @@ Link: https://medium.com/airbnb-engineering/avoiding-double-payments-in-a-distri
     * Tables of idempotency information, always read and write from a *sharded master database for consistency*.
     * Database transactions are combined in different parts of the codebase to ensure atomicity using Java lambdas.
     * *Error responses are classified as retryable or non-retryable*.
+
+**Keep Database commits to a minimum**
+* We split the API request into 3 distinct phases: Pre-RPC, RPC, Post-RPC.
+
+1. *Pre-RPC*: Details of the payment request are recorded in the database.
+2. *RPC*
+3. *Post-RPC*: Details of the response from the external service are recorded in the database, including its *successfulness* and whether a bad request is *retryable* or not.
+
+Rules to maintain data integrity:
+1. No service interaction over networks in Pre and Post-RPC phases.
+2. No database interactions in the RPC phases.
+
+* *Avoid mixing network communication with database work.* Network calls are inherently unreliable.
+* A single API request may consist of multiple RPCs.
+
+* *Every database commit in each of the Pre-RPC and Post-RPC phases is combined into a single database transaction.*
