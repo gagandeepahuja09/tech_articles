@@ -44,3 +44,9 @@ Source: https://www.youtube.com/watch?v=J6mzWQQhppM&ab_channel=TheGeekNarrator
 * To start with, we should have alerts only on the SLAs that we are breaking.
 * Eg. API latency could be impacting multiple other alerts too. Those should be found directly on the dashboard for triaging rather than having alerts for each.
 * SLOs being slightly tighter than the SLAs so that we come to know when something bad is going to happen.
+
+**Scaling up/down for stateful systems**
+* *Data redistribution* becomes a key thing here.
+* Do we need to move a lot of data around for that?
+* We currently have X TB of data in Y nodes, we added more data so now we need to redistribute the data and minimize the data movement.
+* Apache pinot is horizontally scalable for read throughput.
