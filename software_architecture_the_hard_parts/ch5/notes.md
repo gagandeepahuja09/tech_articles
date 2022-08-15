@@ -63,3 +63,22 @@
     * Financial reports
 * Common (shared) code that all reporting categories used was also identified, such as *common utilities, calculators, shared data queries, report distribution and shared data formatters*.
 * Although the namespace (ss.reporting) still exists, it is no longer considered a component but rather a subdomain.
+
+**Gather Common Domain Components Pattern**
+* Identify and collect common domain logic and centralize it to a single component.
+* Shared domain functionality is part of the *business processing logic* of an application (such as *notification, data formatting, and data validation*) and is *common to only some processes*.
+* Shared infrastructure functionality is operational in nature (such as *logging, metrics gathering and security*) and is common to all processes.
+
+* Examples of common domain could be:
+    * Use of shared classes components or a common inheritance structure used by multiple components.
+    * Common name for a component or its corresponding namespace. eg. Ticket auditing, Bill auditing, Survey auditing. This can be consolidated into a new component: ss.shared.audit.
+    * Shared service v/s shared library both have their own pros and cons.
+
+**Fitness functions for Governance**
+* Automatic the governance of shared domain functionality is difficult because of the subjectiveness of identifying shared functionality and classifying it as shared domain or shared infrastructure.
+* *Find common names in leaf nodes of component namespace*
+* Once an alert is raised, it can be checked whether it is a false positive and an exclusion file can be used to store those namespaces so that the same alert is not raised again.
+* *Find common code across components*
+
+**Flatten Components Pattern**
+* When components start getting build on top of other components, which are in turn built on top of other components, they start loosing their identity.
