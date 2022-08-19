@@ -55,3 +55,12 @@
 * 3 is also the right number to start because, we require the majority in quorum. Failure domain ==> very low probability for 3 nodes to fail together.
 
 **How do reads work? What role does consistency level play?**
+* The partition key helps with going to a specific node (or its 2 replicas) out of a 1000 node cluster.
+* After reaching the partition key, it uses mechanisms like bloom filter and key caches to reduce the disk seeks.
+* It finds the SS table on disk. BigTable.
+* The coordinator needs to match with the read done on another node. They have to match with each other by timestamp. If the other node has incorrect data, the other nodes will correct that node. That is called *Read Repair*.
+* Spanner paper from Google: atomic clocks.
+* There is a lot of flexibility in many of the features in Cassandra. The same is true for handling time. It could be handled both at client side and server side. Time drift among clusters is a real issue and is handled with latest version of Linux Kernel.
+    (Not very clear on the time related discussion.)
+
+**W**
