@@ -47,3 +47,7 @@
 * Service scalability can put a tremendous strain on the database, not only in terms of database connections but also on throughput and database capacity.
 * Once the services start to scale, the connection pool quota used earlier will be no longer valid. This will result in connection waits, which will in turn result in overall performance degradation and request timeouts.
 * Breaking DB for each service will result in requiring fewer connections for each database.
+
+**Fault Tolerance**
+* When multiple services share the same database, the overall system becomes less fault tolerant because the database becomes a SPOF.
+* Ability of a some parts of the system to continue uninterrupted when a service or database fails.
