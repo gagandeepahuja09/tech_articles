@@ -36,3 +36,7 @@
     * Resiliency: when we are just building blocks, it's easy to skip failure scenarios.
 * Idempotence: We cannot make our idempotence window infinite. That would choke the storage system.
 19:34
+
+**Gathering Requirements**
+* Thinking about the failure scenarios as early as possible (breaking the system in our mind asap), so that I am aware of the limitations of the system.
+* Team involvement is extremely critical. When different people think with different perspectives in the team, chances of spotting edge cases are much higher.

@@ -63,4 +63,19 @@
 * There is a lot of flexibility in many of the features in Cassandra. The same is true for handling time. It could be handled both at client side and server side. Time drift among clusters is a real issue and is handled with latest version of Linux Kernel.
     (Not very clear on the time related discussion.)
 
-**W**
+**What is allow filtering and why is it not recommended**
+* Cassandra uses a SQL like query language called CQL.
+* Cassandra is meant for partition key based queries. That allows the coordinator to forward the query to a particular node. It is also not meant for JOIN like queries.
+* When we are running a query like SELECT *, it will go through the entire cluster. Cassandra will limit the result to 1000 by default.
+* In order to view more results, we can use allow filtering but it's not recommended on production.
+
+**What is the right way to model data in Cassandra?**
+* In relational model, we first design the entities and then move to the queries that we would support.
+* But in Cassandra or DynamoDB, we do the reverse.
+* Eventually we get to a point where we have to denormalize the tables because the joins are becoming a liability.
+* Common assumption is that Cassandra doesn't give the query flexibility, agility which relational databases can offer.
+* Older relational databases were built to optimize on disk space since it was expensive which isn't the case anymore.
+
+**Modelling A Chat Application**
+
+50:33
