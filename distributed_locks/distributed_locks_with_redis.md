@@ -6,8 +6,8 @@ Safety And Liveness Guarantees
 Minimum guarantees to use distributed locks in an effective way:
 1. Safety Property: Mutual Exclusion
     * At any given moment, only 1 client can hold a lock.
-2. Liveness Property A: Deadlock free.
-    * Eventually it is always possible to acquire a lock, even if the client that locked a resource crashes or gets partitioned.
+2. Liveness Property A: *Deadlock free*.
+    * *Eventually it is always possible to acquire a lock, even if the client that locked a resource crashes or gets partitioned*.
     * We might be using the redis property of TTL to acheive this by just automatically deleting the lock.
 3. Liveness Property B: Fault Tolerance
     * As long as the majority of Redis nodes are up, clients are able to acquire and release locks.
@@ -16,7 +16,7 @@ Minimum guarantees to use distributed locks in an effective way:
 
 Why Failover-based Implementations Are Not Enough
 * Set a key with a TTL(so that it eventually gets freed, property 2). When the client needs to delete the resource, it deletes the key.
-* Problem: SPOF: What is master goes down? Use replica. Problem: redis uses asynchronous replication. Mutual exclusion might not hold.
+* Problem: SPOF: What if the master goes down? Use replica. Problem: redis uses asynchronous replication. Mutual exclusion might not hold.
     1. Client A acquires a lock in the master.
     2. Master crashes before the write to the key is transmitted to the replica.
     3. Replica gets promoted to master.
