@@ -26,3 +26,6 @@
 * Instead we use a fencing token ==> a number that increases every time we acquire a lock.
     * If an operation with a >= number has already been performed, we discard the operation with a lower number.
 * Problem with redlock: it doesn't have the ability to generate fencing tokens.
+
+**Partitioned Leader**
+* 
