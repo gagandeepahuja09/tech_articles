@@ -30,3 +30,15 @@
 * Databases solve this problem with WAL. Only after a record has been written in WAL, can a B-tree be modified.
 
 **DB Replication**
+* How does the data get replicated to the follower? They use a replication log which may be same as the WAL (like Postgres) or a separate replication log file (like MySQL).
+* How do we handle inconsistencies in case of network partition?
+    * The log has a very nice property, because only the lead ever appends to it, we can give a sequence number. When we know a follower's current number, we know that all the records prior to that have been successfully processed.
+    * Whenever the follower recovers, it asks the replication logs from a certain offset.
+
+**Distributed Consensus**
+* A client proposes a value, example X = 8 (which may mean that node X is the leader of partition 8), by sending it to one of the Raft nodes. That node collects values from other nodes. If a majority of nodes agree that value should be X = 8, the first node is allowed to commit the value.
+* Raft also builds up a log of the values that have been agree upon over time.
+
+**Kafka**
+* The interesting thing about Kafka is that it doesn't hide the log from us.
+* It exposes it to us, so that we can build applications around it.
