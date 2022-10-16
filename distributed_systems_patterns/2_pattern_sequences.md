@@ -24,4 +24,16 @@
 * If the leader is temporarily disconnected from the cluster because of *network partition*, it is detected by using *generation clock*. 
 * *Follower reads* allows handling read requests from follower servers.
 
+**Atomic Commit**
+* Often data size is too big to store on a single node. So, data is partitioned across a set of nodes using partitioning schemes such as: *fixed partitions* or *key-range partitions*.
+* Sometimes *data across a set of partitions needs to be stored as one atomic operation.*
+* During process crash / network delay / process pauses it might happen that the data is copied on a few partitions but failed on a few.
+* *Two-phase commit* is used to generate atomicity across multiple partitions for which we require *locking the data-items involved*.
+* This can severly impact *throughput* especially when there are *long-running read-only operations holding locks*.
+* To allow better throughput without using conflicting values, two-phase commit often use *versioned value* storage.
+
 **Kubernetes or Kafka Control Plane**
+* Products like Kubernetes or Kafka are built around a strongly-consistent metadata store.
+* *Consistent core* is used to maintain a strongly consistent, fault tolerant metadata store.
+* *Lease* is used to implement *group membership* and *failure detection* of cluster nodes.
+* Cluster nodes use *State watch* to get notified when any cluster node fails or updates its metadata.
