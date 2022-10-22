@@ -22,7 +22,7 @@
 * Heartbeat interval is small enough to ensure that it does not take a lot of time to detect server failure.
 * In the worst case, the server might be up and running, but the cluster as a group can go ahead considering the server to be failed.
 
-* With the split brain problem, it 2 sets of servers accept update independently, different clients can get and set different data and once the split brain problem is resolved, it is *impossible to resolve conflicts automatically*.
+* With the split brain problem, if 2 sets of servers accept update independently, different clients can get and set different data and once the split brain problem is resolved, it is *impossible to resolve conflicts automatically*.
 * Every action that the server performs can only be considered successful only if the majority of the servers can confirm the action.
 * If we want to tolerate f failures, we need a cluster size of 2f + 1.
 

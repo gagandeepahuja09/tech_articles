@@ -1,0 +1,1 @@
+* An index in the WAL showing which portion of the log can be discarded.

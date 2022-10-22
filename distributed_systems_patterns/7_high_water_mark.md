@@ -1,0 +1,1 @@
+*aka CommitIndex. An index in the write-ahead-log showing the last successful replication.*

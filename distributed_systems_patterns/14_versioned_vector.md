@@ -1,0 +1,1 @@
+* Lamport clocks are useful when comparing two events occuring on a specific node. But it won't be useful if we want to know about two events occuring on two separate nodes. Eg. knowing concurrent transactions for a specific key on multiple nodes.

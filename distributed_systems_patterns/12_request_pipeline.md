@@ -1,0 +1,1 @@
+*Improve latency by sending multiple requests on the connection without waiting for the response of the previous requests.*
