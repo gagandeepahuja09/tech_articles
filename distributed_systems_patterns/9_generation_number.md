@@ -22,3 +22,5 @@ private void becomeFollower() {
     replicationState.setLeaderId(leaderId);
     transitionTo(ServerRole.FOLLOWING);
 }
+
+* Thereafter the leader includes the generation in every request: *Heartbeat or Replication*.
