@@ -36,6 +36,29 @@ private ReplicationResponse appendEntries(ReplicationRequest replicationRequest)
 * The Leader keeps track of log indexes replicated at each server, when responses are received.
 
 class ReplicateLog...
-    logger.info("")
+    logger.info("Updating matchIndex for " + response.getServerId() + " to " + response.getReplicatedLogIndex());
+    updateMatchingLogIndex(response.getServerId(), response.getReplicatedLogIndex());
+    var logIndexAtQuorum = computeHighWaterMark(logIndexesAtAllServers(), config.numberOfServers());
+    var currentHighWaterMark = replicationState.getHighWaterMark();
+    if (logIndexAtQuorum > currentHighWaterMark && logIndexAtQuorum != 0) {
+        applyLogEntries(currentHighWaterMark, logIndexAtQuorum);
+        replicationState.setHighWaterMark(logIndexAtQuorum);
+    }
+
+Long computeHighWaterMark(List<Long> serverLogIndexes, int noOfServers) {
+    serverLogIndexes.sort(Long::compareTo);
+    return serverLogIndexes.get(noOfServers / 2);
+}
 
 *Todo: possible subtle issues*
+
+**Log Truncation for Conflict Resolution**
+* Any server which restarts or rejoins the cluster after a pause, finds the new leader. It then explicitly asks for the current high-water mark, truncates its log to high-water mark, and then gets all the entries beyond high-water mark for the leader.
+
+class ReplicatedLog...
+void maybeTruncate(ReplicationRequest replicationRequest) {
+    replicationRequest.getEntries().stream()
+        .filter(entry -> wal.getLastLogIndex() >= entry.getEntryIndex &&
+        entry.getGeneration() != wal.readAt(entry.getEntryIndex()).getGeneration())
+        .forEach(entry -> wal.truncate(entry.getEntryIndex()));
+}

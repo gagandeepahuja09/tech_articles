@@ -1,8 +1,11 @@
+**Problem**
+Acheiving consensus on individual requests is not enough.
+
 * For each log entry, the leader appends it to its local WAL and then sends it to all its followers.
 
 private long appendAndReplicate(byte[] data) {
     Long lastLogEntryIndex = appendToLocalLog(data);
-    replicatedOnFollowers(lastLogEntryIndex);
+    replicateOnFollowers(lastLogEntryIndex);
     return lastLogEntryIndex;
 }
 
