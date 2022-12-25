@@ -14,7 +14,7 @@
 * Original Dynamo
     * Much simpler key-value data model. (no secondary indexes) DynamoDB has a richer data model.
     * Dynamo was run like a single-tenant system. Each team would run their own instance.
-    * DynamoDB: leaderless. Any of them can take writes, hence helps with availability but compromises with availability.
+    * Dynamo: leaderless. Any of them can take writes, hence helps with availability but compromises with consistency.
     * 2022: DynamoDB released a new paper.
     * Symmetry and Shared-nothing architecture: Each server has the same job. Makes the job of maintainence very easy. true with Dynamo, not true with DynamoDB? DynamoDB is operating without being symmetric because because doing the maintainence at their scale makes sense because of ammortizing a large no. of users. 
 
@@ -69,3 +69,36 @@
 
 **Concurrent Updates in DynamoDB**
 * Dynamo paper mentions maintaining multiple versions of the same key. It leaves the job on conflict resolution to the application layer.
+    * *Write consistency:* All writes go to the same leader. No write consistency issues. With Cassandra, we can have write consistency issues (if we use lightweight transactions, could be resolved but would be much slower).
+    * *Read consistency:* Inconsistency can be there if we hit the GSI/read replica.
+    * If we have concurrent requests for key K, those would be ordered as per the arrival order.
+* *Asserting conditions*: Add balance to Y account only if the balance has already been removed from X account.
+
+**What happens when the leader goes down?**
+* A new leader election will happen. That leader will ensure that is caught up with all the latest changes.
+* Slight availability blip is still possible during leader election. But Amazon has high enough availability (even though leaderless would have higher availability).
+* DynamoDB has added another feature to the leader election to ensure that leader election is not very frequent. If leader doesn't get the reply from the leader, before asking for starting the leader election, it asks other replicas.
+
+**CAP Theorem**
+* When we have a distributed system with replication, we could have a n/w partition b/w those nodes. In that case, we have to choose b/w one of the 2 options, we cannot get both:
+    * we want a consistent view of the database.
+    * our nodes won't able to able to accept reads and writes.
+* DynamoDB is a CP system. In case of n/w partitions, it will reject writes. Cassandra and Dynamo are AP systems.
+* It still has high availability. Its availability is better than many AP systems. One of the reason is the small size of the storage nodes (small partitions) which helps in recovering quickly. In a small storage node, we can spin up a new node quickly and copy the data.
+
+**PACELC Theorem**
+* PACELC theorem is a generalization of CAP theorem as it talks about both network partition and the normal case. If Partition, you get either one of Availability or Consistency else you get either one of Latency or Consistency.
+* In the normal case, DynamoDB favor latency as it would accept writes for a quorum and not require successful writes from all nodes. 
+
+**Transaction Support In DynamoDB**
+* Transaction support in DynamoDB is very different from relational databases. 
+* In case of RDBMS, transaction could be locking the rows for much longer. We could accepting user input or doing API calls in between.
+* DynamoDB instead supports transactions via batch support. Long running transactions are not supported. All the instructions in the batch will be performed in a transaction providing rollback capabilities.
+* Transactions are not recommended for high contention writes. It will lead to the txns failing if the write to the same item arrives at the same time.
+
+**DynamoDB And Change Data Capture**
+* Every time a write record comes into the table, it will also write that to a stream. The stream can be consumed like a Kafka or Kinesis stream for usecases like:
+    * DB aggregations (on any of DynamoDB or other tables).
+    * Broadcast event for other use cases: could use event bridge/SNS/Kafka for that.
+    * Analytics.
+* Each partition will have a different consumer.
