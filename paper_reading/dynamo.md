@@ -66,3 +66,69 @@
     * Dynamo: always writeable.
         * Cannot reject customer updates resulting in poor customer experience.
         * Push the conflict resolution to the reads so that writes are never rejected.
+* *Who performs conflict resolution: data store or application?*
+    * Choices are limited if the resolution is performed by the data store. eg: LWW (last write wins).
+    * Since the application is aware of the schema, it can decide on the basis of user experience. Eg: shopping cart: merge and show.
+    * Both options provided.
+
+* *Incremental Stability*: Application should be able to scale out one storage node at a time, with minimal impact on operators of the system and the system itself.
+* *Symmetry*: 
+    * Every node should have same set of responsibilities as its peers.
+    * It simplifies the process of *system provisioning and maintainence*.
+* *Decentralization*:
+    * Simpler, more scalabable, available system.
+* *Heterogeneity in Infrastructure*:
+    * Work distribution must be proportional to the capabilities of the individual servers.
+    * Helps in adding new nodes with higher capacity without having to upgrade all nodes at once.
+
+**3. Related Work**
+
+**3.1 Peer to Peer Systems**
+* O(1) routing: each peer maintain enough routing information locally so that it can route requests to the appropriate peer within a constant no. of hops.
+
+**3.3 Main Characteristics**
+1. Always writeable - Updates are not rejected due to *failures* or *concurrent writes*.
+2. Single administrative domain where all nodes are assumed to be trusted.
+3. Applications using Dynamo don't require support for hierarchical namespaces (file systems) or complex relational schema (traditional databases).
+4. p99.9 ==> few 100 ms. To meet stringent SLAs, it is imperative to avoid routing requests through multiple nodes.
+    * Multi-hopping increases variability in response times.
+    * Zero-hop DHT. Each node maintains enough routing info to route request to the appropriate node directly.
+
+**4 System Architecture**
+* System needs to have scalable solutions for load balancing, membership and failure detection, failure recovery, replica synchronization, overload handling, state transfer, concurrency, job scheduling, request marshalling, request routing, system monitoring, alarming, configuration management.
+
+* Core techniques discussed: partitioning, replication, versioning, membership, failure handling and scaling.
+
+**4.1 System Interface**
+* Two operations exposed: get and put.
+* *get(key)*: Returns a single object or a list of objects with conflicting versions along with a *context*.
+* *put(key, context, object)*
+* *Context*:
+    * System metadata like object version.
+    * Opaque to the caller. (who is the caller?)
+    * It is stored along with the object so that the system can identify the validity of the context object.                            
+* MD5 hash is applied to the key to generate a 128-bit identifier to determine the storage nodes responsible for serving the key.   
+
+**4.2 Partitioning Algorithm**
+* *Incremental scaling requires dynamic partitioning*.
+* Common technique: consistent hashing.
+
+* *Consistent Hashing*: 
+    * Output range of a hash function is treated as a fixed circular space or *ring*.
+    * i.e. Largest value wraps around the smallest value.
+    * Each node is assigned a *random value* within this space which denotes its *position*.
+    * In order to map a key to a position, we take the hash (eg. MD5 hash) of the key and by walking clockwise, find the node with the just greater value. (we could implement consistent hashing using binary search).
+    * Each node becomes responsible for the region b/w it and its predecessor.
+    * **Principal Advantage**: The arrival and departure of a node only affects its immediate neighbours and other nodes remain unaffected.
+
+* *Challenges with the basic consistent hashing algorithm*:
+    * *Random position assignment* of nodes leads to *non-uniform data and load distribution*.
+    * Oblivious to the *heterogeneity in the performance of nodes*.
+
+* *Solution: virtual nodes*
+    * Instead of assigning a node a single point in the ring, each node gets assigned multiple points in the ring.
+
+* *Advantages of virtual nodes* 
+    * If a node becomes unavailable (due to failure or routine maintainence), the load handled by this node is evenly distributes across all the remaining available nodes.
+    * When a node becomes available again, or a new node is added to the system, the newly added node accepts a roughly equivalent amount from each of the other available nodes.
+    * The no. of virtual nodes a node is responsible for can be decided on the basis of its capacity, accounting for heterogeneity in the infrastructure.
