@@ -132,3 +132,29 @@
     * If a node becomes unavailable (due to failure or routine maintainence), the load handled by this node is evenly distributes across all the remaining available nodes.
     * When a node becomes available again, or a new node is added to the system, the newly added node accepts a roughly equivalent amount from each of the other available nodes.
     * The no. of virtual nodes a node is responsible for can be decided on the basis of its capacity, accounting for heterogeneity in the infrastructure.
+
+**4.3 Replication**
+* Required to achieve *high availability and durability*.
+* Each data item is replicated at N hosts. N is a parameter *configured per-instance*.
+* Each key k is assigned to a *coordinator node*.
+* The coordinator is in charge of replication of the data items that fall within its range (N-1 successor nodes).
+* Each node is responsible for the region b/w it and its Nth predecessor.
+* *Preference List*: List of nodes responsible for storing a particular key.
+* *Membership Detection*: Every node should be able to determine what all nodes should be in the list for a particular key.
+* Note: All N should be physical nodes and not virtual nodes.
+
+**4.4 Data Versioning**
+* Eventual consistency. There is a bound on the update propagation times. However, under certain failure scenarios (eg. server outages or network partitions), updates may not arrive at all replicas for an extended period of time.
+* Applications like shopping cart can tolerate such inconsistencies.
+    * If the latest state is unavailable to the user and the user makes a change to an old state, that information is still useful and should be preserved.
+    * It should supersede the currently unavailable latest state and should be maintained as a new version.
+* Both add to cart and delete items from cart or any update on cart ==> all are put requests on Dynamo.
+* Certain failure modes can result in having even more than 2 versions of the same data.
+    * Application developers will need to design application that keeps the reconciliation in mind. We don't want to loose any update.
+
+**Causality via Vector Clocks**
+* It is a list of (node, counter) pairs.
+* We can determine whether 2 versions are on parallel branches or have a causal ordering by examining their vector clocks.
+    * If the counters of the first object's clock are <= all of the nodes in the second clock, then the first is the ancestor of second and can be forgotten.
+    * Otherwise the 2 changes are considered to be in conflict and require conciliation.
+* When a client wishes to update an object, it must specify which version it is updating.
