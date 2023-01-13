@@ -45,7 +45,31 @@ Source: https://www.youtube.com/watch?v=KTJ4sqAgcxA&t=864s&ab_channel=TheGeekNar
 * *Schema-on-write or schema-on-read*. Schema-on-write means that we need to define the schema before we start indexing.
 * *Query and Ingestion Isolation*
     * When we have separate nodes for query and indexing, in those scenarios, the storage and compute are generally decoupled. We require a shared storage for interaction.
-    * If the index worker nodes know, where to ship the segments after they are built. That is, index nodes and query nodes are aware of the partitioning scheme. This could create a problem where we need to have a very high network link open b/w the peer nodes. (48: 08)
+    * If the index worker nodes know, where to ship the segments after they are built. That is, index nodes and query nodes are aware of the partitioning scheme. This could create a problem where we need to have a very high network link open b/w the peer nodes. We could have a dense network where every index nodes is able to connect to every query node or maintain some mapping which might not go well with ephemeral networks.
+    * Solr solves this problem by creating *request quotas*. Eg: a node can handle 100 concurrent requests, out of which 40 are dedicated search and 60 are dedicated index requests. This is tweakable. Eg: we would want maximum capacity to go to search in day time and to index in night time.
+    * If we are doing the dynamic allocation at a cluster level, it needs to be done very careful as if it goes wrong, it could lead to resource starvation and could impair the ability to dynamically resize the cluster.
+    * Where is the configuration for resource quota stored? Overseer checks for updates in the configuration or it could be an event driven system where the event is sent to the overseer and it updates the coordination store.
+    * Workers periodically pull the configuration from the coordination store, ensuring that they don't overwhelm the coordination store. It is not a good idea to push the configuration all the time in a large cluster due to fan out. (53:02)
+* *Pros and cons of append-only systems*
+* Pros
+    * Lock-free: writers don't block readers.
+    * Allow to scale well.
+* Cons
+    * Updates: we use tombstones. We have to read backwards. Document state in the latest segment only matters but we will be paying for all the segments where that is present.
+    * This leads to I/O, latency, cost problem.
+    * We use merge to solve this problem. (similar to GC). Problem: expensive for I/O, CPU.
+* *Hotspots*:
+    * We can have predictable (eg. upcoming concert or flash sale) or unpredictable hotspots.
+    * We can take measures in advance to mitigate predictive scenarios.
+    * For unpredictable hotspots, decoupling of storage and compute could solve the problem. If there is too much pressure on a single shard, we can have multiple workers read the same shard. The bottleneck could be the storage where we are not storing on those storage nodes for a long time.
+    * Hotspot could also be a read or write hotspot. In case of read hotspot, we could just increase the no. of workers.
+    * Write hotspots are harder as it generally requires going to a master and then replicated to replicas. We could have this by having dynamic partitions: split the hot partition itself or go to a leaderless replica mode (we will have to handle conflicting writes in such scenarios).
+    * There are also solutions like *lazy quorums* where other nodes which were not responsible for saving writes also save the write for it on a temporary basis. Once the load on the shard stabilizes, they can handoff the new data which they had stored temporarily.
+    * We also have the concept of *virtual sharding* used at certain places. We could virtual key ranges, which could move around if required.
+    * *Will batching writes help in case of hotspots?* It does work if the # of objects being updated is not large. Possible problems:
+        * *stale writes*
+        * *Maintainence*: High in-memory maintainence.
+        * *Reliability*: node goes down, will we write transactional logs for in-memory buffers.   
 
 
 * Ingestion Layer --> Enrichment Layer --> (Indices, Metadata for Indices) --> Query Engine --> Ranking.
