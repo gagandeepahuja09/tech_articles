@@ -39,3 +39,56 @@
 * Key Aspect: *Providing a single-tenant experience to every customer using a mult-tenant architecture*.
 
 * **Lessons Learnt**
+* In order to improve the customer experience, they *reshape the physical partitioning scheme of the tables, depending on the customer's traffic patterns*.
+* In order to protect against hardware failures (Durability) and software bugs, they perform continuous verification of data at rest.
+* In order to maintain high available and safely add new features requires:
+    * Careful operation discipline and tooling.
+    * Formal proofs of complex algorithms.
+    * Game days (chaos and load tests).
+    * Upgrade / downgrade tests.
+    * Deployment safety.
+* *Designing systems for predictability over absolute effeciency improves system stability*. While components like caches can improve performance, *do not allow them to hide that would be performed in their absence, ensure that the system is always provisioned to handle the unexpected*.
+
+**2. History**
+* Lesson learnt from Dynamo: It was providing application direct access to database instances. This led to facing *scaling bottlenecks* like:
+    1. Connection management.
+    2. Interference b/w concurrent workloads.
+    3. Operational problems with tasks like schema upgrades.
+* Problem solved by adopting a *service-oriented architecture*.
+* *Operational complexity*:
+    * Teams had to take care of their own installation and upgrades.
+    * Teams had to become expert on various parts of the DB service.
+* S3 and SimpleDB were released during similar time to provide managed and elastic experience and reduce operational burden.
+* Amazon teams preferred using these 2 over Dynamo even if Dynamo was more suitable for their use case because of ease of use.
+* *SimpleDB*
+    * Fully-managed elastic NoSQL database.
+    * Limitations: 
+        * limited storage (10 GB per table) and request throughput.
+        * devs had to divide data b/w multiple tables to satisfy their requirement.
+        * unpredictable read and write latencies since all attributes were indexed and the index had to be updated with every write.
+* Best solution: combine best of Dyanamo (incremental scalability and predictable high performance) and SimpleDB (ease of administration of a cloud service, consistency, and a table based data model that is richer than a pure key-value store).
+
+**3. Architecture**
+* DynamoDB table -> collection of items -> collection of attributes.
+* Each item is uniquely identified by a primary key. Schema of primary key is defined during table creation.
+* It contains a partition key or a partition key and a sort key (a composite primary key).
+* A partition key's value is hashed and its output determines where the item will be stored.
+* Multiple items can have the same partition key in case of a composite PK but they should different sort keys.
+* Secondary indexes are also supported.
+* Supported operations: PutItem, GetItem, UpdateItem, DeleteItem.
+* (How?) DynamoDB supports ACID transactions, enabling applications to update *multiple items*(?) without compromising the *scalability, availability and performance characteristics* of DynamoDB table.
+* In order to handle the *throughput and storage requirements* of the table, a DynamoDB table is divided into *multiple partitions*.
+* Each partition hosts a disjoint and contiguous part of table's key range.
+* Each partition has multiple replicas distributed across different AZs for high availability and durability.
+* *Replica group*: The replicas for a partition form a replica group.
+* Multi-Paxos used by replicas for leader election and consensus.
+    * Any replica can trigger a round of the election.
+    * Once elected, a replica can maintain leadership as long as it periodically renews its leadership lease.
+* Only the leader replica can serve *write and strongly consistent read requests*.
+* *Write path*: 
+    * Leader for the replication for the key being written generates a WAL record and sends it to its peers.
+    * Write is acknowledged to the application once a quorum of peers persists the log record to their local write-ahead logs.
+* If the leader of the group is failure detected (considered unhealthy or unavailable) by any of its peers, the peer can propose a new round of election to elect itself as the new leader.
+    * The new leader won't serve any writes or consistent reads until the previous leader's lease expires (question: won't that make the service unavailable for that specific key for that duration? can we expire the prev leader's lease after leader election completion?)
+* Storage nodes contain both the write ahead logs and the B-tree.
+* In order to improve availability and durability, we can have *log nodes* that only store WALs.
