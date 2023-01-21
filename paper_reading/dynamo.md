@@ -129,7 +129,7 @@
     * Instead of assigning a node a single point in the ring, each node gets assigned multiple points in the ring.
 
 * *Advantages of virtual nodes* 
-    * If a node becomes unavailable (due to failure or routine maintainence), the load handled by this node is evenly distributes across all the remaining available nodes.
+    * If a node becomes unavailable (due to failure or routine maintainence), the load handled by this node is evenly distributed across all the remaining available nodes.
     * When a node becomes available again, or a new node is added to the system, the newly added node accepts a roughly equivalent amount from each of the other available nodes.
     * The no. of virtual nodes a node is responsible for can be decided on the basis of its capacity, accounting for heterogeneity in the infrastructure.
 
@@ -193,4 +193,61 @@
 * *Tradition Quorum*: Reduced availability during network partitions. Might reject writes if W/R writes/reads are not possible.
 * *Sloppy Quorum*: Read and write operations are performed on the first N healthy nodes, which may not always be the first N nodes encountered while walking the consistent hashing ring.
 * How will one of the actual first N node get the data if it was not written due to the node not being healthy at that time?
-* *Hinted Handoff*
+* *Hinted Handoff* helps with this:
+    * Assume that due to A being down, it was sent to D.
+    * D will have a hint in its metadata that suggests which node was the intended recipient of the data (A in this case).
+    * Nodes that receive hinted replicas will keep them in a separate local database that is scanned periodically.
+    * Upon detecting that A has recovered, D will attempt to deliver it to A. Upon successful transfer, D can delete the data from its local store.
+
+* In order to have the highest level of availability, the value of W should be 1, which means that even if a single node is healthy and able to durably write the key to its local store.
+
+* In practice, Dynamo sets a higher value of W to meet the desired level of durability
+* Question: How is durability compromised if the write was successful to one node?
+
+* Dynamo targets multi-datacenter level durability.
+    * The preference list of a key is constructed such that the storage nodes are spread across multiple data-centers.
+    * The datacenters are connected through high-speed network links. 
+
+**Handling Permanent Failures: Replica Synchronization**
+* Hinted replica nodes can become unavailable before they are returned to the original replica node.
+    * (*Not able to clearly visualize how the above problem is fully solved.*)
+* To handle this and other threats to durability, Dynamo use Merkle-trees for synchronization. 
+* Merkle-tree:
+    * Binary hash tree. Leaf nodes are hashes of the keys.
+
+**4.8 Membership And Failure Detection**
+
+* *4.8.1 Ring Membership*
+* A node outage rarely signifies a permanent departure (often transient) and hence should not result in rebalancing of the partition assignment or repair of the unreachable replicas.
+* (Question: how are permanent failures detected? If a node is unhealthy, it could be a partial failure or a permanent failure. This might need to be determined via logs?)
+* Hence, the process used is partially manual. An administrator uses CLI/browser to issue a change to join a node to a ring or remove a node from a ring.
+    * The node that serves the above request writes the membership change and its time of issue to persistent store. The membership changes form a history.
+    * *Gossip-based protocol*: Each node contacts a peer chosen at random every second and the two nodes effectively reconcile their persisted membership change histories.
+* When a node starts for the first time, it chooses its set of virtual nodes and maps the relation (node to virtual node). The mappings are reconciled during the same gossip communication that reconciles membership information.
+    * Hence partitioning and placement information are both reconciled via gossip-based protocol.
+    * This allows each node to forward request to the appropriate virtual node directly.
+
+* *4.8.2 External Discovery: Solving Split Brain*
+* The administrator could add two nodes (A, B) to join the ring and neither would be immediately aware of the other.
+* This problem is solved by adding seed nodes: which are discovered through external mechanism like reading a static configuration file.
+* This results in all nodes being aware of the seed nodes.
+* 
+
+**5. Implementation**
+* Each storage node has 3 main software components:
+    * Request coordination
+    * Membership and Failure Detection
+    * Local Persistence Engine
+
+* *Local Persistence Engine*:
+    * Built such that different nodes storage engines can be plugged in.
+    * Reason for choosing pluggable storage engine: application owners can choose the engine best suited for their access patterns.
+    * Engines in use by Dynamo: 
+        * BDB (Berkeley DB) Transaction Data Store (used for majority of the cases).
+        * BDB Java Edition
+        * MySQL
+        * In-memory buffer with persistent backing store.
+
+* *Request coordination*
+    * The message processing pipeline uses SEDA. (Staged Event Driven Architecture)
+        * (Question: how is staging useful for performance in the CS world? is there some proof?)
