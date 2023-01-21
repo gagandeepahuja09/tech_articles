@@ -92,3 +92,31 @@
     * The new leader won't serve any writes or consistent reads until the previous leader's lease expires (question: won't that make the service unavailable for that specific key for that duration? can we expire the prev leader's lease after leader election completion?)
 * Storage nodes contain both the write ahead logs and the B-tree.
 * In order to improve availability and durability, we can have *log nodes* that only store WALs.
+* DynamoDB consists of tens of microservices.
+* Core services:
+    * *Metadata service*: It stores the routing information about the tables, indexes and the replica groups.
+    * *Request routing service*: 
+        * Responsible for authenticating, authorizing each request to the appropriate server. The request routers look up the routing information from the metadata service.
+        * All resource creation, updation, and data definition requests are routed to the autoadmin service.
+    * *Storage service*: for storing on storage nodes.
+    * *Autoadmin service*:
+        * It is like the CNS of DynamoDB.
+        * It is responsible for *fleet health*, *partition health*, *scaling of tables*, and *execution of all control plane requests*.
+        * It continuously monitors the health of all the *partitions* and replaces any replica deemed unhealthy (slow or unresponsive or being hosted on bad hardware).
+        * It also performs health checks of all core components of DynamoDB and replaces any hardware that is failing or has failed.
+* Other services support features like: 
+    * Point-in-time restores
+    * On-demand backups
+    * Update streams
+    * Global admission control
+    * Global tables
+    * Global secondary indexes
+    * Transactions
+
+**4 Journey from provisioned to on-demand**
+* Partitions are a way to *dynamically scale both the capacity and performance of tables*.
+* In the original release, customers explicitly specified the *provisioned throughput* in terms of RCUs (read capacity units) and WCUs (write capacity units).
+* For items upto 4KB in size, 1 RCU can perform 1 strongly consistent read request per second.
+* For items upto 1 KB in size, 1 WCU can perform 1 standard write request per second.
+* In order to scale the table elastically, partitions could be split and migrated.
+* Early version of dynamoDB tightly coupled the assignment of capacity and performance to individual partitions which led to challenges.

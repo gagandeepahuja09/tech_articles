@@ -158,3 +158,39 @@
     * If the counters of the first object's clock are <= all of the nodes in the second clock, then the first is the ancestor of second and can be forgotten.
     * Otherwise the 2 changes are considered to be in conflict and require conciliation.
 * When a client wishes to update an object, it must specify which version it is updating.
+    * put(key, context, object) ==> context contains the version information.
+    * get(key) ==> will return all leaf objects.
+* Overwritten data (D1, D2, D3, D4) can be garbage collected.
+* There is no causal relation b/w D3, D4. One has Sy value higher while the other has Sz value higher. In such cases, both versions are presented to the client.
+
+* *Handling vector clock size*: 
+    * If too many servers are coordinating the writes to an object, then the size of the vector clock can grow very quickly. 
+    * In practice, this should not happen because writes will only happen by the top N nodes in the preference list.
+    * In case of network partitions or multiple server failures, nodes that are not in the top N preference list can also contribute to the writes.
+    * *Clock Truncation Scheme*: 
+        * Along with maintaining a (node, counter) pair, we also maintain, we also maintain a timestamp which indicates when the node updated the item.
+        * Once the no. of items ie (node, counter) pair reach a threshold, we remove the oldest item.
+        * Could lead to inefficiencies but they haven't solved for it due to no issues encountered on production.
+
+**Execution of get and put operations in failure-free environment**
+* *Request routing*
+* *Consistency among replicas*:
+    * Quorum: R + W > N. R and W are configurable values.
+    * R (or W) is the minimum no. of nodes that must participate in a successful read (or write) operation.
+    * The latency of a get (or put) operation is determined by the the slowest of the R (or W) replicas.
+    * Hence the ideal value of R + W is N + 1. Else it will add to the latencies. 
+    * *Write Path*
+        * Upon receiving a put() request for a key, the coordinator generates the vector clock for the new version and writes the new version (along with the vector clock) locally.
+        * The coordinator then sends the new version (along with the vector clock) to the N highest-ranked reachable nodes.
+        * If at least W-1 nodes respond, then the write is considered successful.
+    * *Read Path*
+        * Similar to write path, request goes the N nodes from pref list and waits for R-1 responses.
+        * If there are multiple versions, it returns causally unrelated versions.
+        * Divergent versions could be reconciled at the application layer.
+    * *Question: What if W writes are not possible? Do we handle rollbacks for the successful writes?*
+
+**Handling Failures: Sloppy Quorums And Hinted Handoff**
+* *Tradition Quorum*: Reduced availability during network partitions. Might reject writes if W/R writes/reads are not possible.
+* *Sloppy Quorum*: Read and write operations are performed on the first N healthy nodes, which may not always be the first N nodes encountered while walking the consistent hashing ring.
+* How will one of the actual first N node get the data if it was not written due to the node not being healthy at that time?
+* *Hinted Handoff*

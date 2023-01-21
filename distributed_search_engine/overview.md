@@ -69,8 +69,28 @@ Source: https://www.youtube.com/watch?v=KTJ4sqAgcxA&t=864s&ab_channel=TheGeekNar
     * *Will batching writes help in case of hotspots?* It does work if the # of objects being updated is not large. Possible problems:
         * *stale writes*
         * *Maintainence*: High in-memory maintainence.
-        * *Reliability*: node goes down, will we write transactional logs for in-memory buffers.   
+        * *Reliability*: node goes down, will we write transactional logs for in-memory buffers.  
+* *How does the storage happen?*
+    * It is stored on the local disk by the worker along with the local disk of the replica responsible for that shared.
+    * *Tiered storage*: Latest shards live on worker nodes for a certain duration. Then they move to worker nodes with cheaper and slower storage like HDDs and eventually they are compacted and moved to a cold storage like S3 or HDFS.
+    * ES: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-lifecycle-management.html Critical for cost saving.
+* *Query processing*
+    * Unlike regular databases, we cannot rely rely on the sharding schema to prune away shards. Eg: we will know the exact shard to go to depending on the query (hash or range partitioning).
+    * Search engines have a much higher fanout. We can implicit do the pruning by devising some scheme by understanding the intent of the user but there is no defined way of doing it.
+    * Typically, coordinate worker node queries all other worker nodes and ranks and finds the relevant ones.
+* *Ranking*
+    * It is generally a multi-phase operation.
+    * Phase 1: static ranker. Only look at docs with static rank > 100.
+    * Phase 2: TF IDF/ Cosine similarity.
+    * Phase 3: Nueral networks. (not part of core search engines).
+* *Filter queries*
+    * Range query handling: Lucene uses K-D Trees.
+* Workers are not dealing with the actual documents. They will only return the uuid and the rendering layer will take care of getting the docs.
+* *In-memory indexes*
+    * Before flushing the data to disk, we keep the data in-memory and search engines combine the results of in-memory and disk indices.
 
+* *Operational aspects*
+    * What if one of the node goes down?
 
 * Ingestion Layer --> Enrichment Layer --> (Indices, Metadata for Indices) --> Query Engine --> Ranking.
 
