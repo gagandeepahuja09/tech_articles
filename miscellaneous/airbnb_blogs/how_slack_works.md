@@ -67,3 +67,80 @@
     * Queue depth is monitored, so that it doesn't go very high.
 
 * Most messages are presence (offline, online). (This is N ^ 2 ==> we need to tell every user about every other user in the team).
+
+**Deferring Work: Job Queue**
+* Physically persisted in redis.
+* There are multiple job queues for performance isolation. Each having different pools of workers, so it can be scaled according to the performance requirement.
+* Some things take up a lot of time. Eg:
+    * Link unfurling
+    * Search indexing
+    * Exports / Imports (importing years of data from a competing chat product).
+
+**Other missing things**
+* Memcache wrapped around many DB accesses for providing materialized views.
+    * It is done on a case-by-case manner when a slow query is found and is mostly manual.
+* ML Model for search results: Thrift interface.
+* Rate-limiting around critical services.
+* Search
+    * Solr
+    * Team partitioned
+    * Fed from job queue workers
+
+**Team Partition Advantages**
+* Easy scaling to lot of teams.
+* Isolates failures and perf problems.
+* Makes customer complaints easy to field.
+* Natural fit for a paid product.
+
+**Per-Team Message Server**
+* Low latency broadcasts.
+
+**Hard Cases**
+* *Mains failures*: Mains DB or group of DB which maintains the mapping of which shard belongs to which team is a SPOF.
+    * Can't georeplication solve that problem? We can route the request to other datacenters in such cases.
+
+* *Rtm.Start on Large Teams*: Consider that large teams (1000+) are trying to login at the same millisecond.
+
+**Mains failure**
+* There are 2 physical machines for mains, both are master. Both are in different data centers.
+* 1 Master fails, partner takes over.
+* What if both fail? Is that even possible, aren't they in different data centers?
+    * It is possible if the failure is load-induced. If one went down due to load, the other would be 2X the requests.
+    * Many users can proceed via memcached. For the rest, slack is down. (Can't this entire dataset be kept on memcached?)
+
+**Rtm.Start for large teams**
+* Unlike slack, can't we show old data for few users for some time.
+* Can't we have rate limiting at a team level.
+* Returns image of entire team.
+* Channel membership is O(n^2) for n users.
+* Mass reconnect
+    * A large team looses, the regains office connectivity.
+    * n users perform O(n^2) rtm.start operations.
+    * It can 'melt' the team shard.
+
+**Scale Out Mains**
+* Mains has very simple query pattern (point queries). 
+* Pick your favourite scale-out storage engine to replace mains with.
+* Why didn't they do it?
+    * Able to protect the mains via:
+        * Rate-limiting
+        * Memcached
+    * Very hard and risky thing to change, which could cause a global slack outage.
+
+**Rtm.start for large teams**
+* Problem is not that bad: p95, p99: 221, 660 ms.
+* One solution: *Lazy loading*
+    * Since channel membership is the biggest problem, change APIs so client can load channel members lazily. Quadratic problem is not just limited to channels. (emojis, etc also).
+
+**Mass Reconnects**
+* Flannel: application-level edge cache.
+    * What does edge mean? Not running very close to the data center.
+    * Is this related to edge router (router located at n/w boundary that allows internal n/w to connect to external n/w s)?
+    * Few of the functionalities of rtm.start will be taken care by flannel.
+
+**Parts left out**
+* Client tech: phones and laptop specific.
+* Voice calls and huddle.
+* Backups
+* Data Warehouse
+* Search

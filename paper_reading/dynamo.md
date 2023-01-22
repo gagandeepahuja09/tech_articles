@@ -251,3 +251,11 @@
 * *Request coordination*
     * The message processing pipeline uses SEDA. (Staged Event Driven Architecture)
         * (Question: how is staging useful for performance in the CS world? is there some proof?)
+    * Each client request results in the creation of a state machine on the node that received the client request.
+    * The state machine contains the logic for:
+        1. Identifying the nodes responsible for a key.
+        2. Sending the requests.
+        3. Waiting for responses.
+        4. Potentially doing retries.
+        5. Processing the replies.
+        6. Packaging the response to the client.
