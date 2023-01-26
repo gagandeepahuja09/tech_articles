@@ -32,3 +32,5 @@ Cons:
 * More bandwidth
 * Slower than UDP
 * Stateful
+    * Both server and client carry the information about the connection.
+    * Advantages of a stateless application => We can destroy a server and bring it back in no time.

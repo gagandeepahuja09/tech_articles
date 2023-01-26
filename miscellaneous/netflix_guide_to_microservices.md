@@ -77,3 +77,40 @@ Use Cases
 * Didn't have proper hystrix setting, bulk-heading, isolation of thread pools => one node down and the entire netflix went down.
 * *Redundancy is fundamental* (2 kidneys, 2 lungs).
 * EVCache is used for redundancy: it is also sharded. Replicated across different availability zones. 
+
+**Hybrid Microservices**
+* It's easy to take EVCache for granted.
+* 30 million requests/sec. ==> 2 trillion requests per day globally.
+* Hundreds of billions of objects.
+* Tens of thousands of memcached instances.
+* Milliseconds of latency per request.
+
+**Excessive Load**
+* Subscriber service was over-relying on EVCache.
+* Multiple services want to know about subscriber info.
+* It was also being called by both online and offline clients. (realtime and batch)
+* It was being called multiple times in the same request (no request level caching).
+* 800k - 1M rps ==> peak.
+* Fallback to service/db. ==> they could not handle this load. 
+* *Solutions*
+    * *Workload partitoning*: Batch and realtime shouldn't be using the same instances.
+    * *Request-level caching*
+    * *Secure token fallback*: The secure token present in the device request can be used as a fallback to get customer information.
+    * Chaos under load.
+
+**Variance/Complexity**
+* Variance or variety in architecture would increase the complexity. 
+
+**Operational Drift**
+* Unintentional variance.
+* Following will keep on changing over time:
+    * Alert thresholds.
+    * Timeouts, retries, fallbacks.
+    * Throughput (RPS).
+* Across microservices:
+    * We might have put up best practices for reliability but only half of the teams have embraced that practice.
+(35:29)
+* We might be very enthusiastic the first time but eventually that dies out as these configuration changes are generally repetitive in nature.
+* We can take a lesson from biology here (Autonomic nervous system): There are a lot of functions that our body just takes care of and we don't need to think about it.
+
+****
