@@ -17,7 +17,8 @@
 * **Push vs Pull Model**
     * Most of these systems use push model.
     * Kafka finds pull model better because the consumer can consume the messages at its rate and avoids being overwhelmed.
-    * It also simplifies the process of replay of messages.
+    * It simplifies the process of replay of messages.
+    * Simplifies the data maintained at broker. Broker need not maintain offsets for each broker and smartly handle purging of logs.
 
 **Basic Terms**
 * *Topic*: A stream of messages of a particular *type*.
@@ -50,4 +51,37 @@ Sample producer code:
 **Efficiency on A Single Partition**
 
 * **Simple Append-Only Storage**
-    * Each partition corre
+    * Each partition of a topic corresponds to a logical log.
+    * Physically a log is implemented as a set of segment files of approx the same size. (eg. 1 GB).
+    * Every time a publisher publishes the message, the broker simple appends the message to the last segment.
+    * *Flushing the segments to disk*
+        * For better performance, segment files are flushed to disk only after a configurable number of messages have been published or a certain amount of time has elapsed.
+        * Database on the other hand, needs to update the wal for each and every write query.
+        * A message is exposed to the consumer only after it has been flushed.
+    * *Offsets*
+        * Unlike other messaging systems, it doesn't maintain an explicit message id.
+        * Each message is addressed by its logical offset in the log.
+        * This avoids maintaining indexes mapping message ids to the actual message locations. These indexes would be seek-intensive and random access in nature.
+        * Message ids are increasing but not consecutive. The next offset can be found by adding the length of the message to the current offset.
+    * *Offset consumption at consumer*
+        * The consumer issues asynchronous pull requests to the broker to have a buffer of data ready for the application to consume.
+        * Each pull request contains the offset of the message from which the consumption begins and an acceptable no. of bytes to fetch.
+    * *In-memory offset index*
+        * Each broker keeps in-memory a sorted list of offsets. These offsets are the the offset of the first message in every file.
+        * Offset of the 1st msg of file N = offset of last message of file (N - 1) + the message size. 
+
+**Efficient Transfer**
+* Producer: Batching of messages.
+* Consumer: Although the end consumer API iterates one message at a time, under the covers, each pull request consumes multiple message upto a certain size, typically hundreds of kilobytes.
+
+* *Effective Caching*: Kafka avoids in-memory caching and relies only on page (OS) caching.
+*Pros*
+    * Avoid double buffering.
+    * Warm cache is retained even when the process restarts. (?)
+    * *No garbage collection dependency*: Garbage collection is very time and resource intensive. Not caching in memory, reduces the garbage collection overhead. This makes the Kafka implementation possible in a VM-based language.
+    * *Sequential access patterns make normal OS caching methods very effective.*
+
+* SendFile API: reduces data copies and system calls. (TBD)
+
+**Stateless Broker**
+    * Unlike most messaging 
