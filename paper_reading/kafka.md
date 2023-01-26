@@ -84,4 +84,52 @@ Sample producer code:
 * SendFile API: reduces data copies and system calls. (TBD)
 
 **Stateless Broker**
-    * Unlike most messaging 
+    * Unlike most messaging, the broker doesn't maintain the information on how much each consumer has consumed.
+    * This reduces a lot of complexity and overhead on the broker.
+    * This makes it tricky for the broker to delete the message since it doesn't whether all subscribers have consumed the message. This is solved by time based SLA (generally 7 days) for the retention policy. No message will be retained more than this period. It doesn't care whether the consumers were able to finish consumption in this period.
+    * Kafka's performance doesn't degrade with a larger data size, hence the retention is possible.
+    * *Side benefit*: 
+        Rewinding back to old offset and re-consuming data is much simpler. Useful in case of application-level errors for replaying certain messages.
+
+**Distributed Coordination**
+* Producer can send a message to a randomly selected partition or on the basis of a partitioning key and a partitioning function.
+
+* **Consumer Group**: Each message is delivered to only one of the consumers with the group.
+    * No coordination is needed across consumer group.
+* *Goal*: 
+    * The consumers with the group can be in different processes or in different machines.
+    * Our goal is to divide the messages stored in the brokers evenly among the consumers, without introducing too much coordination overhead.
+* *Solution 1*:
+    * If we try all the consumers with the CG to read all the message from a partition, then we would require taking locks and maintaining information regarding the consumer who was the first to acquire the lock so that other consumers don't read the same information.
+* *Solution 2*:
+    * Instead we solve this problem by making partition the smallest unit of parallelism. This means that only one C from a CG can consume from a partition at a time.
+    * Consuming processes need to coordinate only when the consumers re-balance the load which is an infrequent event.
+    * In order for the load for the load to be truly balanced, we require many more partitions in a topic than consumers in each group. 
+
+* **No central master node**
+    * Avoids SPOF and handling master failures.
+    * Consumers coordinate among themselves in a decentralized manner. 
+    * Kafka makes use of ZooKeeper for coordination: A highly-available consensus service.
+
+* **Zookeeper**
+    * It has a simple filesystem like API.
+    * Operations supported: Set the value of a path, Read the value of a path, Delete a path, List the children of a path.
+    * Few interesting features:
+        1. One can register a watcher on a path and get notified when the children of a path or the value of the path changes.
+        2. We can create ephemeral paths, which means that it gets automically removed if the creating client is gone.
+        3. Zookeeper replicates its data to multiple nodes which makes the data highly reliable and available.
+
+* **Kafka + Zookeeper**
+Kafka uses Zookeeper for following tasks:
+1. Detecting the addition and removal of brokers and consumers.
+2. Triggering a rebalance process in each consumer when the above happens.
+3. Maintaining the consumption relationship. (the consumers for each topic).
+4. Keeping track of the consumed offset of each partition.
+
+* When a consumer or broker starts up, it stores its information in a broker or consumer registry in Zookeeper.
+* *Broker registry* stores:
+    * Broker's host name and port.
+    * Set of topics and partitions stored on it.
+* *Consumer registy* includes:
+    * Consumer group to which it belongs.
+    * Set of topics that it subscribes to.
