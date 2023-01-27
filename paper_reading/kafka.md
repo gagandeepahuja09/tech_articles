@@ -133,3 +133,15 @@ Kafka uses Zookeeper for following tasks:
 * *Consumer registy* includes:
     * Consumer group to which it belongs.
     * Set of topics that it subscribes to.
+
+* Each *consumer group* is associated with an *ownership registry* and an *offset registry*.
+* *Ownership registry*: Indicates that this consumer owns this partition.
+    * It has one path for every subscribed partition.
+    * Path value is the id of the consumer currently consuming from this partition.
+* *Offset registry* stores the offset of the last consumed message in the partition.
+
+* The paths created in Zookeeper are ephemeral for the broker registry, the consumer registry and the ownership registry and persistent for the offset registry.
+
+**Rebalance Process**
+* Each consumer registers a Zookeeper watcher on both the broker and consumer registry. It will be notified when a change in broker set or the consumer group occurs.
+* During the initial startup of a consumer or when the consumer is notified about a broker/consumer change through the watcher, the consumer initiates a rebalance process to determine the new subset of partitions it should consume from.
