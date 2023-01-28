@@ -74,3 +74,22 @@ T2
 `
 select sum(t) from temp; ==> 5156
 `
+
+**Lost Updates**
+* Update gets overwritten by an existing transaction.
+* `update temp set name = 'abc' where t = 1;` T1
+* `update temp set name = 'xyz' where t = 1;` T2
+    * T2 overrides T1.
+    * In REPEATABLE READ isolation ==> When we ran the T2 query, it was blocked due to the row-level acquired after executing T1.
+    * Only after commiting T1, this change was applied.
+
+**Isolation Levels**
+* Read Uncommitted
+* Read Committed
+* Repeatable read
+* Snapshot
+* Serializable
+
+**Pessimistic vs Optimistic Concurrency**
+* Pessimistic: uses locks. Locks are tracked by a txn/lock manager which is expensive. 
+* Optimistic: NoSQL databases generally prefer optimistic concurrency control. Fail the txn if they try to step on each other.
