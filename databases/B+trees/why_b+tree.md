@@ -26,3 +26,19 @@
     * The row data is only present in the leaf nodes.
     * The leaf nodes might note be present one after the other sequentially. Instead, we will have offsets to go from one B-tree node to the next one.
     * All of the nodes may or may not be in the same file.
+* *Table as B+ tree*
+    * It can contain N levels. Generally the no. of levels is less and instead the width is more in order to reduce the disk seek-time.
+    * Non-leaf nodes hold routing/range info.
+    * All nodes are stored on the disk. (May get brought in-memory for perf gains).
+    * *Time taken*
+        * *Find one by id*: 3 disk-reads would be required to reach a leaf-node.
+        * *Insert*: Eg: insert row 4
+            * Find the block where row 4 would lie.
+            * Load the disk block in-memory. Since it is in-memory, we can easily do an insertion in middle and need not re-write the entire file. Eg: insert in array.
+            * Flush the changed B+ tree node on the disk.
+            * Problem: what if the B+ tree node is already full of space?
+                * Re-balancing using split and merge.
+        * *Delete*: Delete in-memory and flush to the disk.
+    * *Range query*:
+        * 3 disks for each element and then traversing the leaf nodes.
+    * B-trees allows us to store data in non-leaf nodes also but not B+ trees.
