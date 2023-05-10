@@ -65,3 +65,46 @@ openai.key = 'sk-'
 
 **Give the model time to "think"**
 * Prompt should give clearer instructions so that the model is able to understand that this task will require more computational power.
+
+*Tactic 1: Specify the sequence of steps to complete a task.*
+* prompt = """Perform the following actions:
+    1: Summarize the text delemited by <>.
+    2: Translate the summary into French.
+    3: List each name in the French summary.
+    4. Output JSON with keys: french_summary, num_names.
+    Separate answers with line breaks.
+    Use the following format:
+    Text: <text to summarize>
+    Summary: <summary>
+    Translation: <summary translation>
+    Names: <list of names in Italian summary>
+    Output JSON: <JSON with summary and num_names>
+    Text: <{text}>"""
+    
+*Tactic 2: Instruct the model to work out its own solution before rushing to a conclusion.* 
+    * Your task is to determine if a student's solution is correct or not. To solve the problem, do the following:
+    1. Work out your own solution.
+    2. Compare your solution and the student's solution. Evaluate if the student's solution is correct or not. Don't decide that the student's solution is correct until you have done the problem yourself.
+    Use the following format:
+    Question: <question>
+    Student's solution: <>
+    Actual solution: <steps to work out the solution and your solution here>
+
+* Hallucinations: Make statements that sound possible but are not true. Instruct to first search relevant information and then answer the question based on relevant information.
+
+**Iterative Prompt Development**
+* In most cases, it won't work as expected in the first try.
+* Like ML or any development, it is a cycle of coming up with Idea => Implementation (code/data) [Prompt] => Experimental Result => Error analysis => Refining the Idea (loop) 
+
+* *temperature=0 (degree of randomness)*
+* *LLMs are not good with precision.*
+* Evaluate against a lot of examples.
+* Process is very important. Rather than being able to write perfect prompts in one go.
+
+**Summarizing Text**
+* We were able to highlight the target audience of the summary. Eg: summary for the pricing department (cost and quality imp role), shipping time (delivery time important).
+* Usecase:
+    * Good to provide user with summary of reviews which are helpful in e-commerce website so that they need not go through each review to get a feel of the product.
+* Rather than summarizing, we can also ask to extract the relevant information. 
+
+**Inferring**
