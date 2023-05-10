@@ -37,7 +37,7 @@ Source: https://www.youtube.com/watch?v=yTSq6hJFmUg&ab_channel=AsliEngineeringby
 6. There's no going back (more of an organizational challenge)
     * It's very difficult to switch back to monolith from microservice. Why:
         * Tech diversity: going back to an old tech stack.
-        * Teams have tested autonomy.
+        * Teams have tasted autonomy.
         * People have adopted new tools and processes.
 
 7. Fault tolerance
