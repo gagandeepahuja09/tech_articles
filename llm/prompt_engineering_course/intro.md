@@ -71,7 +71,7 @@ openai.key = 'sk-'
     1: Summarize the text delemited by <>.
     2: Translate the summary into French.
     3: List each name in the French summary.
-    4. Output JSON with keys: french_summary, num_names.
+    4: Output JSON with keys: french_summary, num_names.
     Separate answers with line breaks.
     Use the following format:
     Text: <text to summarize>
@@ -108,3 +108,20 @@ openai.key = 'sk-'
 * Rather than summarizing, we can also ask to extract the relevant information. 
 
 **Inferring**
+* Gives speed in terms of application development as we can start doing this directly through prompts.
+* Eg: positive or negative sentiment of reviews.
+* Takes some text as input and performs some analysis. Extracting labels, names, understanding sentiment.
+* Traditional ML workflow: 
+    * Collect a labelled dataset.
+    * Train the model.
+    * Figure out how to deploy the model on the cloud and make inferences.
+* That can work pretty well but a lot of work involved in the process. 
+* For every task: inferring/sentiment analysis a separate model would be required.
+    * Sentiment of product review in 1 word: positive or negative.
+    * Identify a list of emotions that the review is expressing in not more than 5 items in the list.
+    * Identify the following items from the review text:
+        - Item purchased by reviewer.
+        - Company that made the item.
+* This is like zero-shot learning.
+* Determine whether each topic in the following list of topics is a topic in the text below.
+    * Come to know whenever a news of your subscribed topic comes.
