@@ -86,3 +86,43 @@ model = DecisionTreeRegressor(random_state=1)
     val_predictions = model.predict(val_X)
     print(mean_absolute_error(val_y, val_predictions)) 
 ```
+
+**Underfitting And Overfitting**
+
+**Experimenting with Different Models**
+* Each decision tree node has 2 children.
+* Depth = no. of decisions required to come to a decision. If depth = 10, there are 2^10 groups of houses possible.
+* *Overfitting*: Large no. of leaves => fewer houses in each leave => unreliable predictions => becasue each prediction is based on only a few houses. 
+* *Underfitting*: If no. of leaves is less => each leave will have many houses => which will not be able to capture many patterns and distinctions.
+* We need to find the sweet spot for minimal mean absolute error.
+
+**Example**
+* We can specify the parameter max_leaf_nodes during defining DecisionTreeRegressor to control the tree depth.
+```
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_absolute_error
+
+def get_mae(max_leaf_nodes, train_X, val_X, train_y, val_y):
+    model = DecisionTreeRegressor(max_leaf_nodes=max_leaf_nodes, random_state=0)
+    model.fit(train_X, train_y)
+    preds_val = model.predict(val_X)
+    mae = mean_absolute_error(val_y, preds_val)
+    return(mae)
+```
+
+**Random Forests**
+* Can try to solve the overfitting and underfitting problem.
+* Random forest uses many trees. It make a prediction by averaging the prediction of each component tree.
+* Works well with default params.
+* There could be models with even better performance but many of them are sensitive to getting the right parameters.
+
+```
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error
+
+forest_model = RandomForestRegressor(random_state=1)
+forest_model.fit(train_X, train_y)
+preds = forest_model.predict(val_X)
+print(mean_absolute_error(val_y, preds))
+```
+* One of the the best features of random forests is that they work reasonably well even without tuning.
