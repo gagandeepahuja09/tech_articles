@@ -41,3 +41,12 @@
     3. One-hot encoding
         * We won't generally use for variables taking more than 15 values.
         * Eg: for color, we can have different columns: Red, Yellow, Green.
+
+**Pipelines**
+* Clean up modelling code.
+* It bundles the preprocessing and modelling step, so that we can do it as a single step.
+* Benefits:
+    * *Cleaner code*: We don't manually need to keep track of our training and validation data at each step.
+    * *Fewer bugs*: There are fewer opportunies to misapply a step or forget a processing step.
+    * *Easier to productionize*
+    * *More options for model validation*: Eg: cross-validation. 
