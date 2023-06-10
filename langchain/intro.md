@@ -17,3 +17,11 @@
     )
     print(llm(prompt))
 ```
+
+**Agents**
+* Chain run in a pre-determined order.
+* Agents instead use an LLM to determine which actions to take and in what order.
+
+**ChatModels**
+
+**Custom Tools**
