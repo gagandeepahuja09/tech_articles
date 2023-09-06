@@ -1,7 +1,7 @@
 import os
 import time
 
-os.environ['OPENAI_API_KEY'] = "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"
+os.environ['OPENAI_API_KEY'] = ""
 
 from langchain.document_loaders import UnstructuredURLLoader
 from langchain.text_splitter import CharacterTextSplitter
