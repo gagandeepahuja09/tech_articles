@@ -140,3 +140,9 @@ ProductB    Awful           Bland
     # Check your answer
     q7.check()
 `
+
+# 4. Grouping And Sorting
+* Replicating value_counts
+    `reviews.groupby('points').points.count()`
+* Cheapest wine for each point value
+    `reviews.groupby('points').price.min()`
