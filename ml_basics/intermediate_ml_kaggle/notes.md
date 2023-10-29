@@ -71,7 +71,7 @@
     score_dataset(reduced_X_train, reduced_X_val, y_train, y_val)
 `
 
-* fit_and_transform ==> first fit and then transform. typically used with 
+* fit_and_transform ==> first fit and then transform. typically used with training data. 
 
 `
     ## Approach 2: Imputation
@@ -81,11 +81,48 @@
     imputed_X_train = pd.DataFrame(my_imputer.fit_transform(X_train))
     imputed_X_valid = pd.DataFrame(my_impute.transform(X_valid))
 
+    # Imputation removed column names, put them back
     imputed_X_train.columns = X_train.columns
     imputed_X_valid.columns = X_valid.columns
 
     score_dataset(imputed_X_train, imputed_X_valid, y_train, y_val)
 `
+
+* In the Kaggle example, approach 3 performed slightly worse than approach 2 (a bit surprising, why could that be?)
+
+`
+    ## Approach 3: Extension to imputation
+    X_train_plus = X_train.copy()
+    X_valid_plus = X_valid.copy()
+
+    for col in cols_with_missing:
+        X_train_plus[col + '_was_missing'] = X_train_plus[col].isnull()
+        X_valid_plus[col + '_was_missing'] = X_valid_plus[col].isnull()
+
+    my_imputer = SimpleImputer()
+    imputed_X_train_plus = pd.DataFrame(my_imputer.fit_transform(X_train_plus))
+    imputed_X_valid_plus = pd.DataFrame(my_imputer.transform(X_valid_plus))
+
+    # Imputation removed column names, put them back
+    imputed_X_train_plus.columns = X_train.columns
+    imputed_X_valid_plus.columns = X_valid.columns
+
+    score_dataset(imputed_X_train_plus, imputed_X_valid_plus, y_train, y_val)
+`
+
+* *Why did imputation perform better than removing missing cols*
+* For each col with missing values, less than 50% of the entries were missing. Hence, removing the col removes a lot of useful information.
+* *Finding columns with missing values and displaying the count of missing values*
+
+`
+    # No. of rows, cols
+    print(X_train.shape())
+
+    missing_value_count_by_column = X_train.isnull().sum() # this will return a series for no. of missing cols for each column
+    print(missing_value_count_by_column[missing_value_count_by_column > 0]) # filter out only those cols from the series where this count > 0
+`
+
+* In the Kaggle exercise, we also saw an example where removing cols with missing values was slightly better than instead using mean value. This could be because missing value could mean empty. year_garage_built column being empty might instead indicate that is doesn't have garage.
 
 **Categorical Variables**
 * *Three Approaches*
