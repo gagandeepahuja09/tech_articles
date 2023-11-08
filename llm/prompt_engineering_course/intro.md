@@ -1,5 +1,8 @@
 8:50
 
+*How many parameters are there in LLM?*
+* Billions: GPT-3.
+
 * Making API calls to LLMs is under-appreciated for developers and what all it can help build.
 * Two types of LLMs:
     * Base LLM: Predicts next word based on training data.

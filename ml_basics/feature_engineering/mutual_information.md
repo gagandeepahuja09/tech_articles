@@ -33,3 +33,7 @@
     # Assumption: should be confirmed for your use case
     discreted_features = X.dtypes == int
 `
+
+* sklearn has 2 MI metrics in its `feature_selection` module: 
+    * mutual_info_regression: real-valued targets. (this case: price as target)
+    * mutual_info_classif: categorical targets
