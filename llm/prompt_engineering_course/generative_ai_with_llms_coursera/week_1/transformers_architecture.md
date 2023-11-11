@@ -34,7 +34,7 @@
     * BERT is trained on 2 different tasks: 
         * Masked Language Modeling
         * Next Sentence Prediction
-* *Masked Language Modeling*: 15 percent of the words are left masked or blank. It is model's job to predict those words.
+* *Masked Language Modeling*: 15 percent of the tokens (not words) are left masked or blank. It is model's job to predict those tokens.
 * *Next Sentence Prediction*: Training data has 2 sentences, it is model's job to predict whether they belong together. That is, should come after each other or not.
 
 * *Fine-tuning BERT*
