@@ -116,7 +116,7 @@
 
 `
     # No. of rows, cols
-    print(X_train.shape())
+    print(X_train.shape)
 
     missing_value_count_by_column = X_train.isnull().sum() # this will return a series for no. of missing cols for each column
     print(missing_value_count_by_column[missing_value_count_by_column > 0]) # filter out only those cols from the series where this count > 0
