@@ -35,6 +35,7 @@ https://www.youtube.com/playlist?list=PLuhqtP7jdD8CD6rOWy20INGM44kULvrHu
 # Padding
 * If we use a 3 * 3 filter, the size of the image gets reduced by an amount of 2.
 * (**Question: why do we need an overlap and need to go through a single cell or pixel multiple times?**)
+    * Is it for gradient descent / back propagation?
 * *Why do we need padding?*
     * If we use many such layers in a neural network, it is possible that the final size of the *image gets reduced* by so much that we might loose the valuable information.
     * The corner pixel are not getting exposed multiple times by the filter.
@@ -42,4 +43,40 @@ https://www.youtube.com/playlist?list=PLuhqtP7jdD8CD6rOWy20INGM44kULvrHu
 * *Why f is an odd number*
     * To cover the input matrix and ensure the elements are exposed more equally.
     * If we use f as odd, we would require doing assymetric padding.
-(2:32 or 4:09)
+* *Valid padding:* No padding.
+* *Same padding*: Output image has the same size as input image.
+    * Input image size = n + 2 * p = n'
+    * Output image size = n = n' - f + 1
+    * n + 2 p - f + 1 = n
+    * p = (f - 1) / 2
+
+# Stride
+* We can slide the window by more than 1. The amount by which we slide the window is the stride value. This also reduces the output matrix size.
+* If the input matrix is n1 * n2, output matrix = floor((n1 - f) / s + 1) * floor((n2 - f) / s + 1)
+* If we are also using padding, formula changes to: floor((n1 + 2p - f) / s + 1) * floor((n2 + 2p - f) / s + 1)
+
+# Max Pooling Layer
+* The function of the pooling layers is to reduce the size or dimension of the image while preserving the features in it.
+* Usually stride is taken the same as the filter length.
+* **Max pooling example**
+
+[
+    [8, 1, 3, 6],
+    [3, 2, 2, 1],
+    [5, 0, 7, 1],
+    [2, 4, 9, 7],
+]
+
+* Filter size = 2, Stride = 2
+* Output = [
+    [8, 6],
+    [5, 9],
+]
+
+* **Why max pooling**
+* Reduces the image, thus reduces computational cost.
+* Features are not just preserved but also enhanced in many cases.
+* Max pooling layer is always applied after the convolutional layer. So, this is the end layer after we have performed the convolution operation for reducing the image size and enhancing the features.
+* It is upto us if we want to add a max pooling layer after a convolutional layer.
+* It is a simple transformation operation and no training operations are involved here.
+* Same number of channels in output as input.
