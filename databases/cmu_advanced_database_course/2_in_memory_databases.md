@@ -19,3 +19,11 @@
 * The system uses an in-memory *buffer pool* to cache pages fetched from disk.
 
 # Buffer Pool
+* When a query accesses a page, the DBMS checks to see if that page is already in memory:
+    * If it's not, the DBMS must copy retrieve it from the disk and copy it into a frame in its buffer pool.
+    * If there are no free frames, then find a page to evict.
+    * If the page being evicted is dirty (modified), then the DBMS must write it back to disk.
+* Why using a traditional disk-oriented DBMS with a large cache won't help. We will be going through following additional steps which are not really needed (extra work):
+    * Always translate a tuple's record id to its memory location.
+    * Worker thread must pin pages that it needs to make sure that they are not swapped to disk.
+    * Running eviction policy to update internal metrics on how pages are being accessed. 
